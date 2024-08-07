@@ -29,6 +29,7 @@
 #include "SX1278.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,7 +37,7 @@
 typedef enum {_TRANSMITER, _RECEIVER}
 _mode;
 
-typedef enum {_INIT, _MAIN, _SELECT_MODE, _WORKING}
+typedef enum {_MAIN, _SELECT_MODE, _MENU, _SEND_CMD, _OPTIONS}
 _screen;
 
 typedef enum {_LEFT_BUTTON, _RIGHT_BUTTON}
@@ -56,6 +57,8 @@ int message_length;
 bool leftButtonPressed = false;
 bool rightButtonPressed = false;
 bool newMsgCome = false;
+
+bool txInitialized = false, rxInitialized = false;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -90,7 +93,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 
 
-void assembleAndPutTextIntoDisplay(_mode loraMode, char * txt){
+void assembleAndPutTextIntoDisplay(_mode loraMode, char * txt1, char * txt2, char * txt3){
 
 	ssd1306_Fill(Black);
 
@@ -107,7 +110,12 @@ void assembleAndPutTextIntoDisplay(_mode loraMode, char * txt){
 
 	lineNo = 1;
 	ssd1306_SetCursor(initX, initY + (fontHeight + 1)* lineNo);
-	ssd1306_WriteString(txt, Font_7x10, White);
+	ssd1306_WriteString(txt1, Font_7x10, White);
+
+	lineNo = 2;
+	ssd1306_SetCursor(initX, initY + (fontHeight + 1)* lineNo);
+	ssd1306_WriteString(txt2, Font_7x10, White);
+
 	ssd1306_UpdateScreen();
 }
 
@@ -159,6 +167,35 @@ bool isButtonPressed(_button b){
 	return false;
 }
 
+void sendMsg_Basic(char * msg){
+	if(!txInitialized){
+		ret = SX1278_LoRaEntryTx(&SX1278, 16, 2000);
+		txInitialized = true;
+		rxInitialized = false;
+	}
+
+	message_length = sprintf(buffer, msg);
+	ret = SX1278_LoRaEntryTx(&SX1278, message_length, 2000);
+
+	ret = SX1278_LoRaTxPacket(&SX1278, (uint8_t*) buffer,
+			message_length, 2000);
+}
+
+bool readMsg(){
+	if(!rxInitialized){
+		ret = SX1278_LoRaEntryRx(&SX1278, 16, 2000);
+		rxInitialized = true;
+		txInitialized = false;
+	}
+
+	ret = SX1278_LoRaRxPacket(&SX1278);
+	if (ret > 0) {
+		SX1278_read(&SX1278, (uint8_t*) buffer, ret);
+		return true;
+	}
+	return false;
+}
+
 void displayMainScreen(){
 
 }
@@ -198,9 +235,9 @@ int main(void)
 
 	_mode loraMode;
 	_screen currentScreen = _MAIN;
-	uint8_t option = 0;
-
-	bool txInitialized = false, rxInitialized = false;
+	uint8_t option = 0, cmdNo = 0;
+	bool newMsg = false;
+	bool sendMsg = false;
 
 	ssd1306_Init();
 
@@ -217,8 +254,8 @@ int main(void)
 		loraMode = _RECEIVER;
 	}
 
-	uint32_t prevTime, currTime;
-	prevTime = currTime = HAL_GetTick();
+	uint32_t newMsgDispTime, currTime;
+	newMsgDispTime = currTime = HAL_GetTick();
 
 	//initialize LoRa module
 	SX1278_hw.dio0.port = DIO0_GPIO_Port;
@@ -258,51 +295,69 @@ int main(void)
 			HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_RESET);
 
-			if(!rxInitialized){
-				ret = SX1278_LoRaEntryRx(&SX1278, 16, 2000);
-				rxInitialized = true;
-				txInitialized = false;
+			if(readMsg()){
+				newMsgDispTime = HAL_GetTick();
+				if(strcmp(buffer, "LED ON") == 0){
+					HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+				}
+				else if(strcmp(buffer, "LED OFF") == 0){
+					HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
+				}
 			}
 
-			ret = SX1278_LoRaRxPacket(&SX1278);
-			if (ret > 0) {
-				SX1278_read(&SX1278, (uint8_t*) buffer, ret);
-				assembleAndPutTextIntoDisplay(loraMode, buffer);
-				HAL_Delay(100);
-			}
 			break;
 
 		case _TRANSMITER:
 			HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);
 
-			if(!txInitialized){
-				ret = SX1278_LoRaEntryTx(&SX1278, 16, 2000);
-				txInitialized = true;
-				rxInitialized = false;
-			}
-
-			if(isButtonPressed(_RIGHT_BUTTON)){
-
-				message_length = sprintf(buffer, "Hello %d", message);
-				ret = SX1278_LoRaEntryTx(&SX1278, message_length, 2000);
-
-				ret = SX1278_LoRaTxPacket(&SX1278, (uint8_t*) buffer,
-						message_length, 2000);
-				message += 1;
+			if(sendMsg){
+				sendMsg_Basic(buffer);
+				sendMsg = false;
 				HAL_Delay(100);
 			}
-
-
 			break;
 		}
 
 
 		switch(currentScreen){
 		case _MAIN:
-			assembleAndPutTextIntoDisplay(loraMode, "");
+			if(currTime - newMsgDispTime < 1000){
+				assembleAndPutTextIntoDisplay(loraMode, "New msg:", buffer, "");
+			}
+			else{
+				assembleAndPutTextIntoDisplay(loraMode, "","","");
+			}
 			if(isButtonPressed(_LEFT_BUTTON)){
-				currentScreen = _SELECT_MODE;
+				currentScreen = _MENU;
+			}
+			break;
+
+		case _MENU:
+			if(option == 0){
+				writeLineByLine("->Select mode", "Send cmd", "Options", "");
+				if(isButtonPressed(_LEFT_BUTTON)){
+					currentScreen = _SELECT_MODE;
+					option = 0;
+				}
+			}
+			else if(option == 1){
+				writeLineByLine("Select mode", "->Send cmd", "Options", "");
+				if(isButtonPressed(_LEFT_BUTTON)){
+					currentScreen = _SEND_CMD;
+					option = 0;
+				}
+			}
+			else if(option == 2){
+				writeLineByLine("Select mode", "Send cmd", "->Options", "");
+				if(isButtonPressed(_LEFT_BUTTON)){
+					currentScreen = _OPTIONS;
+					option = 0;
+				}
+			}
+
+			if(isButtonPressed(_RIGHT_BUTTON)){
+				option = (option + 1)%3;
 			}
 			break;
 
@@ -312,6 +367,7 @@ int main(void)
 				if(isButtonPressed(_LEFT_BUTTON)){
 					loraMode = _RECEIVER;
 					currentScreen = _MAIN;
+					option = 0;
 				}
 			}
 			else if(option == 1){
@@ -319,12 +375,55 @@ int main(void)
 				if(isButtonPressed(_LEFT_BUTTON)){
 					loraMode = _TRANSMITER;
 					currentScreen = _MAIN;
+					option = 0;
 				}
 			}
 
 			if(isButtonPressed(_RIGHT_BUTTON)){
 				option = (option + 1)%2;
 			}
+
+			break;
+
+		case _SEND_CMD:
+			if(option == 0){
+				writeLineByLine("->LED ON", "LED OFF", "", "");
+				if(isButtonPressed(_LEFT_BUTTON)){
+					sprintf(buffer, "LED ON");
+					sendMsg = true;
+					currentScreen = _MAIN;
+					option = 0;
+
+					writeLineByLine("", "Msg sent!", "(Perharps)", "");
+					HAL_Delay(1000);
+					currentScreen = _MAIN;
+				}
+			}
+			else if(option == 1){
+				writeLineByLine("LED ON", "->LED OFF", "", "");
+				if(isButtonPressed(_LEFT_BUTTON)){
+					sprintf(buffer, "LED OFF");
+					sendMsg = true;
+					currentScreen = _MAIN;
+					option = 0;
+
+					writeLineByLine("", "Msg sent!", "(Perharps)", "");
+					HAL_Delay(1000);
+					currentScreen = _MAIN;
+				}
+			}
+
+			if(isButtonPressed(_RIGHT_BUTTON)){
+				option = (option + 1)%2;
+			}
+			break;
+
+		case _OPTIONS:
+			writeLineByLine("Nothing is", "written here", "yet :)", "");
+			HAL_Delay(1000);
+			currentScreen = _MAIN;
+			break;
+
 		}
 
 		/* USER CODE END WHILE */

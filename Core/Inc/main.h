@@ -71,7 +71,6 @@ void Error_Handler(void);
 #define NSS_GPIO_Port GPIOA
 #define DIO0_Pin GPIO_PIN_9
 #define DIO0_GPIO_Port GPIOA
-#define DIO0_EXTI_IRQn EXTI9_5_IRQn
 #define MODE_Pin GPIO_PIN_10
 #define MODE_GPIO_Port GPIOA
 #define BLUE_LED_Pin GPIO_PIN_11

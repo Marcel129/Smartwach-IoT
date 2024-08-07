@@ -23,7 +23,6 @@ C_DEPS :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
-Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates \
 Drivers/LoRa_Driver \
 Drivers/OLED_Drivers \
 Drivers/STM32F1xx_HAL_Driver/Src \

@@ -12,7 +12,6 @@ RM := rm -rf
 -include Drivers/STM32F1xx_HAL_Driver/Src/subdir.mk
 -include Drivers/OLED_Drivers/subdir.mk
 -include Drivers/LoRa_Driver/subdir.mk
--include Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
