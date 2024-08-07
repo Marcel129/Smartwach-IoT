@@ -1,0 +1,30 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+# Toolchain: GNU Tools for STM32 (10.3-2021.10)
+################################################################################
+
+# Add inputs and outputs from these tool invocations to the build variables 
+C_SRCS += \
+../Drivers/OLED_Drivers/ssd1306.c \
+../Drivers/OLED_Drivers/ssd1306_fonts.c 
+
+OBJS += \
+./Drivers/OLED_Drivers/ssd1306.o \
+./Drivers/OLED_Drivers/ssd1306_fonts.o 
+
+C_DEPS += \
+./Drivers/OLED_Drivers/ssd1306.d \
+./Drivers/OLED_Drivers/ssd1306_fonts.d 
+
+
+# Each subdirectory must supply rules for building sources it contributes
+Drivers/OLED_Drivers/%.o Drivers/OLED_Drivers/%.su: ../Drivers/OLED_Drivers/%.c Drivers/OLED_Drivers/subdir.mk
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB -c -I../Core/Inc -I"C:/Users/Marcel/STM32CubeIDE/workspace_1.11.2/lora_F103/Drivers/LoRa_Driver" -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -I"C:/Users/Marcel/STM32CubeIDE/workspace_1.11.2/lora_F103/Drivers/OLED_Drivers" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
+
+clean: clean-Drivers-2f-OLED_Drivers
+
+clean-Drivers-2f-OLED_Drivers:
+	-$(RM) ./Drivers/OLED_Drivers/ssd1306.d ./Drivers/OLED_Drivers/ssd1306.o ./Drivers/OLED_Drivers/ssd1306.su ./Drivers/OLED_Drivers/ssd1306_fonts.d ./Drivers/OLED_Drivers/ssd1306_fonts.o ./Drivers/OLED_Drivers/ssd1306_fonts.su
+
+.PHONY: clean-Drivers-2f-OLED_Drivers
+
