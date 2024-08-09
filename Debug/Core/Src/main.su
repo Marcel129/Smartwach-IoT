@@ -5,6 +5,6 @@
 ../Core/Src/main.c:170:6:sendMsg_Basic	16	static
 ../Core/Src/main.c:184:6:readMsg	8	static
 ../Core/Src/main.c:199:6:displayMainScreen	4	static
-../Core/Src/main.c:208:5:main	48	static
-../Core/Src/main.c:440:6:SystemClock_Config	72	static
-../Core/Src/main.c:480:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:208:5:main	56	static
+../Core/Src/main.c:487:6:SystemClock_Config	72	static
+../Core/Src/main.c:527:6:Error_Handler	4	static,ignoring_inline_asm

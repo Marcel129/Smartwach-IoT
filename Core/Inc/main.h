@@ -59,12 +59,14 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define BUILDIN_LED_Pin GPIO_PIN_13
 #define BUILDIN_LED_GPIO_Port GPIOC
+#define SENSOR_2_Pin GPIO_PIN_0
+#define SENSOR_2_GPIO_Port GPIOB
+#define SENSOR_1_Pin GPIO_PIN_1
+#define SENSOR_1_GPIO_Port GPIOB
 #define RIGHT_BUTTON_Pin GPIO_PIN_13
 #define RIGHT_BUTTON_GPIO_Port GPIOB
-#define RIGHT_BUTTON_EXTI_IRQn EXTI15_10_IRQn
 #define LEFT_BUTTON_Pin GPIO_PIN_14
 #define LEFT_BUTTON_GPIO_Port GPIOB
-#define LEFT_BUTTON_EXTI_IRQn EXTI15_10_IRQn
 #define RESET_Pin GPIO_PIN_15
 #define RESET_GPIO_Port GPIOB
 #define NSS_Pin GPIO_PIN_8

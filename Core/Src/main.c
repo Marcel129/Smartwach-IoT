@@ -254,8 +254,10 @@ int main(void)
 		loraMode = _RECEIVER;
 	}
 
-	uint32_t newMsgDispTime, currTime;
-	newMsgDispTime = currTime = HAL_GetTick();
+	uint32_t newMsgDispTime, currTime, openWindowStart_IN, openWindowStart_OUT, deadTime;
+	newMsgDispTime = currTime = openWindowStart_IN = openWindowStart_OUT = deadTime = HAL_GetTick();
+
+	bool beSensitiveForSignal = true;
 
 	//initialize LoRa module
 	SX1278_hw.dio0.port = DIO0_GPIO_Port;
@@ -289,6 +291,23 @@ int main(void)
 	{
 		currTime = HAL_GetTick();
 
+		//				if(HAL_GPIO_ReadPin(SENSOR_1_GPIO_Port, SENSOR_1_Pin) == GPIO_PIN_SET){
+		//					HAL_GPIO_WritePin(BUILDIN_LED_GPIO_Port, BUILDIN_LED_Pin, GPIO_PIN_RESET);
+		//				}
+		//				else{
+		//					HAL_GPIO_WritePin(BUILDIN_LED_GPIO_Port, BUILDIN_LED_Pin, GPIO_PIN_SET);
+		//				}
+		//
+		//				if(!(HAL_GPIO_ReadPin(SENSOR_2_GPIO_Port, SENSOR_2_Pin) == GPIO_PIN_SET)){
+		//					HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
+		//				}
+		//				else{
+		//					HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+		//				}
+
+
+
+
 		switch(loraMode){
 
 		case _RECEIVER:
@@ -311,10 +330,41 @@ int main(void)
 			HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);
 
+			if((HAL_GPIO_ReadPin(SENSOR_1_GPIO_Port, SENSOR_1_Pin) == GPIO_PIN_RESET) && beSensitiveForSignal){
+				openWindowStart_IN = HAL_GetTick();
+				beSensitiveForSignal = false;
+			}
+
+			if(currTime - openWindowStart_IN < 500){
+				if((HAL_GPIO_ReadPin(SENSOR_2_GPIO_Port, SENSOR_2_Pin) == GPIO_PIN_RESET)){
+					sprintf(buffer, "LED ON");
+					sendMsg = true;
+					deadTime = HAL_GetTick();
+				}
+			}
+
+			if(((HAL_GPIO_ReadPin(SENSOR_2_GPIO_Port, SENSOR_2_Pin) == GPIO_PIN_RESET)) && beSensitiveForSignal){
+				openWindowStart_OUT = HAL_GetTick();
+				beSensitiveForSignal = false;
+			}
+
+			if(currTime - openWindowStart_OUT < 500){
+				if(HAL_GPIO_ReadPin(SENSOR_1_GPIO_Port, SENSOR_1_Pin) == GPIO_PIN_RESET){
+					sprintf(buffer, "LED OFF");
+					sendMsg = true;
+					deadTime = HAL_GetTick();
+				}
+			}
+
+			if((HAL_GPIO_ReadPin(SENSOR_2_GPIO_Port, SENSOR_2_Pin) == GPIO_PIN_SET) &&
+					HAL_GPIO_ReadPin(SENSOR_1_GPIO_Port, SENSOR_1_Pin) == GPIO_PIN_SET &&
+					currTime - deadTime > 1000){
+				beSensitiveForSignal = true;
+			}
+
 			if(sendMsg){
 				sendMsg_Basic(buffer);
 				sendMsg = false;
-				HAL_Delay(100);
 			}
 			break;
 		}
